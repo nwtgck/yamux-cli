@@ -1,4 +1,5 @@
 # yamux-cli
+[![CI](https://github.com/nwtgck/yamux-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/nwtgck/yamux-cli/actions/workflows/ci.yml)
 
 ## Install
 
