@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/hashicorp/yamux"
+	"github.com/nwtgck/yamux-cli/version"
 	"github.com/spf13/cobra"
 	"io"
 	"net"
@@ -10,10 +11,12 @@ import (
 )
 
 var listeningPort int
+var showsVersion bool
 
 func init() {
 	cobra.OnInitialize()
 	RootCmd.PersistentFlags().IntVarP(&listeningPort, "listen", "l", 0, "listening port")
+	RootCmd.PersistentFlags().BoolVarP(&showsVersion, "version", "", false, "show version")
 }
 
 var RootCmd = &cobra.Command{
@@ -26,6 +29,10 @@ yamux -l 8080
 `,
 	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if showsVersion {
+			fmt.Println(version.Version)
+			return nil
+		}
 		if len(args) == 2 {
 			return yamuxServer(args[0], args[1])
 		}
