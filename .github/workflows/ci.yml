@@ -3,9 +3,14 @@ name: CI
 on: [push, pull_request]
 
 jobs:
-  build:
+  build_and_operational_test:
     runs-on: ubuntu-18.04
+    defaults:
+      run:
+        shell: bash
     steps:
+      - name: Run Nginx
+        run: docker run -d -p 8080:80 nginx:alpine
       - uses: actions/checkout@v2
       - name: Set up Go 1.x
         uses: actions/setup-go@v2
@@ -13,3 +18,13 @@ jobs:
           go-version: 1.16
       - name: Build
         run: CGO_ENABLED=0 go build -o yamux
+      - name: Operation test
+        run: |
+          set -eu
+          mkfifo my_pipe
+          cat my_pipe | ./yamux localhost 8080 | ./yamux -l 8081 > ./my_pipe &
+          sleep 1
+          curl localhost:8080 > expected_response.txt
+          # HTTP GET request twice
+          diff expected_response.txt <(curl localhost:8081)
+          diff expected_response.txt <(curl localhost:8081)
