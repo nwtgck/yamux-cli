@@ -10,26 +10,28 @@ import (
 	"os"
 )
 
-var listeningPort int
-var showsVersion bool
+var flag struct {
+	listeningPort int
+	showsVersion  bool
+}
 
 func init() {
 	cobra.OnInitialize()
-	RootCmd.PersistentFlags().IntVarP(&listeningPort, "listen", "l", 0, "listening port")
-	RootCmd.PersistentFlags().BoolVarP(&showsVersion, "version", "", false, "show version")
+	RootCmd.PersistentFlags().IntVarP(&flag.listeningPort, "listen", "l", 0, "listening port")
+	RootCmd.PersistentFlags().BoolVarP(&flag.showsVersion, "version", "", false, "show version")
 }
 
 var RootCmd = &cobra.Command{
-	Use:          os.Args[0],
-	Short:        "yamux",
-	Long:         "Multiplexer",
+	Use:   os.Args[0],
+	Short: "yamux",
+	Long:  "Multiplexer",
 	Example: `
 yamux localhost 80
 yamux -l 8080
 `,
 	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if showsVersion {
+		if flag.showsVersion {
 			fmt.Println(version.Version)
 			return nil
 		}
@@ -55,7 +57,7 @@ func yamuxServer(host string, port string) error {
 			return err
 		}
 		conn, err := net.Dial("tcp", address)
-		if err !=nil {
+		if err != nil {
 			return err
 		}
 		fin := make(chan struct{})
@@ -82,7 +84,7 @@ func yamuxServer(host string, port string) error {
 }
 
 func yamuxClient() error {
-	ln, err := net.Listen("tcp", fmt.Sprintf(":%d", listeningPort))
+	ln, err := net.Listen("tcp", fmt.Sprintf(":%d", flag.listeningPort))
 	if err != nil {
 		return err
 	}
