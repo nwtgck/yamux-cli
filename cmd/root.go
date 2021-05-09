@@ -12,14 +12,17 @@ import (
 )
 
 var flag struct {
-	listens      bool
-	showsVersion bool
+	listens        bool
+	usesUnixSocket bool
+	showsVersion   bool
 }
 
 func init() {
 	cobra.OnInitialize()
 	RootCmd.PersistentFlags().BoolVarP(&flag.listens, "listen", "l", false, "listens")
 	RootCmd.PersistentFlags().BoolVarP(&flag.showsVersion, "version", "", false, "show version")
+	// NOTE: long name 'unixsock' is from ncat (ref: https://manpages.debian.org/buster/ncat/nc.1.en.html)
+	RootCmd.PersistentFlags().BoolVarP(&flag.usesUnixSocket, "unixsock", "U", false, "uses Unix-domain socket")
 }
 
 var RootCmd = &cobra.Command{
@@ -40,31 +43,50 @@ yamux -l 8080
 			if len(args) != 1 {
 				return errors.New("port number is missing")
 			}
-			ln, err := net.Listen("tcp", ":"+args[0])
+			var ln net.Listener
+			var err error
+			if flag.usesUnixSocket {
+				ln, err = net.Listen("unix", args[0])
+			} else {
+				ln, err = net.Listen("tcp", ":"+args[0])
+			}
 			if err != nil {
 				return err
 			}
 			return yamuxClient(ln)
 		}
-		if len(args) == 2 {
-			return yamuxServer(args[0], args[1])
+		var dial func() (net.Conn, error)
+		if flag.usesUnixSocket {
+			if len(args) != 1 {
+				return errors.New("Unix-domain socket is missing")
+			}
+			dial = func() (net.Conn, error) {
+				return net.Dial("unix", args[0])
+			}
+		} else {
+			if len(args) != 2 {
+				return errors.New("host and port number are missing")
+			}
+			address := net.JoinHostPort(args[0], args[1])
+			dial = func() (net.Conn, error) {
+				return net.Dial("tcp", address)
+			}
 		}
-		return nil
+		return yamuxServer(dial)
 	},
 }
 
-func yamuxServer(host string, port string) error {
+func yamuxServer(dial func() (net.Conn, error)) error {
 	yamuxSession, err := yamux.Server(&stdioconn{}, nil)
 	if err != nil {
 		return err
 	}
-	address := net.JoinHostPort(host, port)
 	for {
 		yamuxStream, err := yamuxSession.Accept()
 		if err != nil {
 			return err
 		}
-		conn, err := net.Dial("tcp", address)
+		conn, err := dial()
 		if err != nil {
 			return err
 		}

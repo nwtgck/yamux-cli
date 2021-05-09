@@ -11,6 +11,9 @@ jobs:
     steps:
       - name: Run Nginx
         run: docker run -d -p 8080:80 nginx:alpine
+      - run: sudo apt install -y socat
+      - name: Serve Unix-domain socket
+        run: socat UNIX-LISTEN:/tmp/my_nginx_socat,fork TCP:localhost:8080 &
       - uses: actions/checkout@v2
       - name: Set up Go 1.x
         uses: actions/setup-go@v2
@@ -18,7 +21,7 @@ jobs:
           go-version: 1.16
       - name: Build
         run: CGO_ENABLED=0 go build -o yamux
-      - name: Operation test
+      - name: Normal TCP
         run: |
           set -eu
           mkfifo my_pipe
@@ -28,3 +31,29 @@ jobs:
           # HTTP GET request twice
           diff expected_response.txt <(curl localhost:8081)
           diff expected_response.txt <(curl localhost:8081)
+          kill %1
+          rm my_pipe
+      - name: Unix-domain socket (dial)
+        run: |
+          set -eu
+          mkfifo my_pipe
+          cat my_pipe | ./yamux -U /tmp/my_nginx_socat | ./yamux -l 8081 > ./my_pipe &
+          sleep 1
+          curl localhost:8080 > expected_response.txt
+          # HTTP GET request twice
+          diff expected_response.txt <(curl localhost:8081)
+          diff expected_response.txt <(curl localhost:8081)
+          kill %1
+          rm my_pipe
+      - name: Unix-domain socket (listen)
+        run: |
+          set -eu
+          mkfifo my_pipe
+          cat my_pipe | ./yamux localhost 8080 | ./yamux -l -U /tmp/my_unginx > ./my_pipe &
+          sleep 1
+          curl localhost:8080 > expected_response.txt
+          # HTTP GET request twice
+          diff expected_response.txt <(curl --unix-socket /tmp/my_unginx http:/index.html)
+          diff expected_response.txt <(curl --unix-socket /tmp/my_unginx http:/index.html)
+          kill %1
+          rm my_pipe
