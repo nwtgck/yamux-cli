@@ -18,12 +18,24 @@ Get more executables in the [releases](https://github.com/nwtgck/yamux-cli/relea
 
 ## Usage
 
+### TCP
+
 ```bash
 ... | yamux localhost 80 | ...
 ```
 
 ```bash
 ... | yamux -l 8080 | ...
+```
+
+### Unix-domain socket
+
+```bash
+... | yamux -U /unix/domain/socket/path | ...
+```
+
+```bash
+... | yamux -U -l /unix/domain/socket/path | ...
 ```
 
 Here is a complete example, but not useful. This is forwarding local 80 port to local 8080 port.
