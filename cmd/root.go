@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"github.com/hashicorp/yamux"
 	"github.com/nwtgck/yamux-cli/version"
@@ -11,13 +12,13 @@ import (
 )
 
 var flag struct {
-	listeningPort int
-	showsVersion  bool
+	listens      bool
+	showsVersion bool
 }
 
 func init() {
 	cobra.OnInitialize()
-	RootCmd.PersistentFlags().IntVarP(&flag.listeningPort, "listen", "l", 0, "listening port")
+	RootCmd.PersistentFlags().BoolVarP(&flag.listens, "listen", "l", false, "listens")
 	RootCmd.PersistentFlags().BoolVarP(&flag.showsVersion, "version", "", false, "show version")
 }
 
@@ -35,11 +36,18 @@ yamux -l 8080
 			fmt.Println(version.Version)
 			return nil
 		}
+		if flag.listens {
+			if len(args) != 1 {
+				return errors.New("port number is missing")
+			}
+			ln, err := net.Listen("tcp", ":"+args[0])
+			if err != nil {
+				return err
+			}
+			return yamuxClient(ln)
+		}
 		if len(args) == 2 {
 			return yamuxServer(args[0], args[1])
-		}
-		if err := yamuxClient(); err != nil {
-			return err
 		}
 		return nil
 	},
@@ -83,11 +91,7 @@ func yamuxServer(host string, port string) error {
 	}
 }
 
-func yamuxClient() error {
-	ln, err := net.Listen("tcp", fmt.Sprintf(":%d", flag.listeningPort))
-	if err != nil {
-		return err
-	}
+func yamuxClient(ln net.Listener) error {
 	yamuxSession, err := yamux.Client(&stdioconn{}, nil)
 	if err != nil {
 		return err
