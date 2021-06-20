@@ -33,6 +33,18 @@ jobs:
           diff expected_response.txt <(curl localhost:8081)
           kill %1
           rm my_pipe
+      - name: Normal TCP specifying host when listening
+        run: |
+          set -eu
+          mkfifo my_pipe
+          cat my_pipe | ./yamux localhost 8080 | ./yamux -l localhost 8081 > ./my_pipe &
+          sleep 1
+          curl localhost:8080 > expected_response.txt
+          # HTTP GET request twice
+          diff expected_response.txt <(curl localhost:8081)
+          diff expected_response.txt <(curl localhost:8081)
+          kill %1
+          rm my_pipe
       - name: Unix-domain socket (dial)
         run: |
           set -eu
