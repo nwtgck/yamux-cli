@@ -40,15 +40,25 @@ yamux -l 8080
 			return nil
 		}
 		if flag.listens {
-			if len(args) != 1 {
-				return errors.New("port number is missing")
-			}
 			var ln net.Listener
 			var err error
 			if flag.usesUnixSocket {
+				if len(args) != 1 {
+					return errors.New("unix domain socket is missing")
+				}
 				ln, err = net.Listen("unix", args[0])
 			} else {
-				ln, err = net.Listen("tcp", ":"+args[0])
+				host := ""
+				port := ""
+				if len(args) == 2 {
+					host = args[0]
+					port = args[1]
+				} else if len(args) == 1 {
+					port = args[0]
+				} else {
+					return errors.New("port number is missing")
+				}
+				ln, err = net.Listen("tcp", net.JoinHostPort(host, port))
 			}
 			if err != nil {
 				return err
