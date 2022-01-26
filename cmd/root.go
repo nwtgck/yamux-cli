@@ -7,6 +7,7 @@ import (
 	"github.com/nwtgck/yamux-cli/version"
 	"github.com/spf13/cobra"
 	"io"
+	"log"
 	"net"
 	"os"
 )
@@ -98,7 +99,8 @@ func yamuxServer(dial func() (net.Conn, error)) error {
 		}
 		conn, err := dial()
 		if err != nil {
-			return err
+			log.Printf("failed to dial: %v", err)
+			continue
 		}
 		fin := make(chan struct{})
 		go func() {
@@ -135,7 +137,8 @@ func yamuxClient(ln net.Listener) error {
 		}
 		yamuxStream, err := yamuxSession.Open()
 		if err != nil {
-			return err
+			log.Printf("failed to open: %v", err)
+			continue
 		}
 		fin := make(chan struct{})
 		go func() {
