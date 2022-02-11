@@ -38,6 +38,17 @@ Get more executables in the [releases](https://github.com/nwtgck/yamux-cli/relea
 ... | yamux -U -l /unix/domain/socket/path | ...
 ```
 
+### UDP
+
+```bash
+... | yamux -u 1.1.1.1 53 | ...
+```
+
+```bash
+... | yamux -ul 1053 | ...
+```
+
+## Complete example
 Here is a complete example, but not useful. This is forwarding local 80 port to local 8080 port.
 
 ```bash
