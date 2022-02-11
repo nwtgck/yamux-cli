@@ -69,3 +69,15 @@ jobs:
           diff expected_response.txt <(curl --unix-socket /tmp/my_unginx http:/index.html)
           kill %1
           rm my_pipe
+      - name: UDP
+        run: |
+          set -eu
+          mkfifo my_pipe
+          cat my_pipe | ./yamux -u 1.1.1.1 53 | ./yamux -ul 1053 > ./my_pipe &
+          sleep 1
+          # DNS request twice
+          # NOTE: if 1053 port is not available they will be timeout errors
+          dig example.com @127.0.0.1 -p 1053
+          dig example.com @127.0.0.1 -p 1053
+          kill %1
+          rm my_pipe
