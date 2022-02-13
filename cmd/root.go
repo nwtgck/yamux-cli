@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"github.com/hashicorp/yamux"
@@ -213,6 +214,8 @@ func (m udpAddrToYamuxStreamMap) Store(key *net.UDPAddr, value *yamux.Stream) {
 	m.inner.Store(key.String(), value)
 }
 
+const udpByteLen = 4
+
 func udpYamuxClient(address string) error {
 	raddrToYamuxStream := udpAddrToYamuxStreamMap{inner: new(sync.Map)}
 	laddr, err := net.ResolveUDPAddr("udp", address)
@@ -230,9 +233,9 @@ func udpYamuxClient(address string) error {
 	var buf [65536]byte // NOTE: 1024 is not enough for vlc udp://@:5050
 
 	for {
-		n, raddr, err := conn.ReadFromUDP(buf[:])
+		n, raddr, err := conn.ReadFromUDP(buf[udpByteLen:])
 		// TODO: remove or use flag to log after UDP feature is stable
-		log.Printf("readfromudp: %s", raddr.String())
+		//log.Printf("readfromudp: %s", raddr.String())
 		if err != nil {
 			return err
 		}
@@ -246,9 +249,14 @@ func udpYamuxClient(address string) error {
 			// TODO: expire yamux stream
 			raddrToYamuxStream.Store(raddr, yamuxStream)
 			go func() {
-				var buf [4096]byte
+				var buf [65536]byte
 				for {
-					n, err := yamuxStream.Read(buf[:])
+					_, err := io.ReadFull(yamuxStream, buf[:udpByteLen])
+					if err != nil {
+						return
+					}
+					l := int(binary.BigEndian.Uint32(buf[:udpByteLen]))
+					n, err := io.ReadFull(yamuxStream, buf[:l])
 					if err != nil {
 						return
 					}
@@ -256,10 +264,8 @@ func udpYamuxClient(address string) error {
 				}
 			}()
 		}
-
-		go func() {
-			yamuxStream.Write(buf[:n])
-		}()
+		binary.BigEndian.PutUint32(buf[:udpByteLen], uint32(n))
+		yamuxStream.Write(buf[:udpByteLen+n])
 	}
 }
 
@@ -279,25 +285,37 @@ func udpYamuxServer(address string) error {
 			yamuxStream.Close()
 			continue
 		}
-		fin := make(chan struct{})
 		go func() {
-			// TODO: hard code
-			var buf = make([]byte, 4096)
-			io.CopyBuffer(yamuxStream, conn, buf)
-			fin <- struct{}{}
+			var buf [65536]byte
+			for {
+				n, err := conn.Read(buf[udpByteLen:])
+				if err != nil {
+					return
+				}
+				binary.BigEndian.PutUint32(buf[:udpByteLen], uint32(n))
+				_, err = yamuxStream.Write(buf[:udpByteLen+n])
+				if err != nil {
+					return
+				}
+			}
 		}()
 		go func() {
-			// TODO: hard code
-			var buf = make([]byte, 4096)
-			io.CopyBuffer(conn, yamuxStream, buf)
-			fin <- struct{}{}
-		}()
-		go func() {
-			<-fin
-			<-fin
-			close(fin)
-			conn.Close()
-			yamuxStream.Close()
+			var buf [65536]byte
+			for {
+				_, err := io.ReadFull(yamuxStream, buf[:udpByteLen])
+				if err != nil {
+					return
+				}
+				l := int(binary.BigEndian.Uint32(buf[:udpByteLen]))
+				n, err := io.ReadFull(yamuxStream, buf[:l])
+				if err != nil {
+					return
+				}
+				_, err = conn.Write(buf[:n])
+				if err != nil {
+					return
+				}
+			}
 		}()
 	}
 }
