@@ -10,8 +10,8 @@ brew install nwtgck/yamux-cli/yamux
 ## Install for Ubuntu
 
 ```bash
-wget https://github.com/nwtgck/yamux-cli/releases/download/v0.2.0/yamux-0.2.0-linux-amd64.deb
-sudo dpkg -i yamux-0.2.0-linux-amd64.deb
+wget https://github.com/nwtgck/yamux-cli/releases/download/v0.4.0/yamux-0.4.0-linux-amd64.deb
+sudo dpkg -i yamux-0.4.0-linux-amd64.deb
 ```
 
 Get more executables in the [releases](https://github.com/nwtgck/yamux-cli/releases) for you environment.
