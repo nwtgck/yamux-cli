@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 
 ## [Unreleased]
 
+## [0.5.0] - 2022-02-16
+### Changed
+* (breaking) Breaking change only for UDP `-u` which supports larger transfer over UDP
+
 ## [0.4.0] - 2022-02-11
 ### Added
 * Support UDP with `--udp` or `-u`
@@ -25,7 +29,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 ### Added
 * Initial release
 
-[Unreleased]: https://github.com/nwtgck/yamux-cli/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/nwtgck/yamux-cli/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/nwtgck/yamux-cli/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/nwtgck/yamux-cli/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/nwtgck/yamux-cli/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/nwtgck/yamux-cli/compare/v0.2.0...v0.3.0
