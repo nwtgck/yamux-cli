@@ -8,7 +8,7 @@ import (
 
 func main() {
 	if err := cmd.RootCmd.Execute(); err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, err.Error())
+		_, _ = fmt.Fprintf(os.Stderr, err.Error()+"\n")
 		os.Exit(-1)
 	}
 }
