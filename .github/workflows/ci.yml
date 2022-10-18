@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 jobs:
   build_and_operational_test:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     defaults:
       run:
         shell: bash
@@ -14,9 +14,9 @@ jobs:
       - run: sudo apt install -y socat
       - name: Serve Unix-domain socket
         run: socat UNIX-LISTEN:/tmp/my_nginx_socat,fork TCP:localhost:8080 &
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3.1.0
       - name: Set up Go 1.x
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
           go-version: 1.16
       - name: Build
